@@ -1,65 +1,146 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect } from 'react';
+import Header from '@/components/Header';
+import ShapeGrid from '@/components/ShapeGrid';
 
-export default function Home() {
+type Employee = { id: number; name: string; username: string };
+type Event = { id: number; title: string; type_name: string; type_color: string; date: string; description: string; participants: Employee[] };
+
+export default function CalendarPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [current, setCurrent] = useState(new Date());
+  const [selected, setSelected] = useState<Event[] | null>(null);
+
+  useEffect(() => {
+    fetch('/api/events').then(r => r.json()).then(setEvents);
+  }, []);
+
+  const year = current.getFullYear();
+  const month = current.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const cells = Array.from({ length: startOffset + daysInMonth }, (_, i) => {
+    const day = i - startOffset + 1;
+    return day > 0 ? day : null;
+  });
+
+  function getEventsForDay(day: number) {
+    return events.filter(e => {
+      const d = new Date(e.date);
+      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+    });
+  }
+
+  const today = new Date();
+  const monthName = current.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+
+  const s = {
+    btn: { background: 'var(--bg-card)', color: 'var(--text-primary)', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' } as React.CSSProperties,
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+      <ShapeGrid />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+      <Header />
+      <div style={{ padding: '1rem' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+          {/* Навигация по месяцу */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, textTransform: 'capitalize' }}>{monthName}</h1>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button onClick={() => setCurrent(new Date(year, month - 1))} style={s.btn}>←</button>
+              <button onClick={() => setCurrent(new Date())} style={s.btn}>Сегодня</button>
+              <button onClick={() => setCurrent(new Date(year, month + 1))} style={s.btn}>→</button>
+              <a href="/admin" style={{ ...s.btn, background: 'var(--accent)', color: '#ffffff', textDecoration: 'none', display: 'inline-block' }}>Управление</a>
+            </div>
+          </div>
+
+          {/* Дни недели */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.25rem' }}>
+            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
+              <div key={d} style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', padding: '0.25rem' }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Сетка */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+            {cells.map((day, i) => {
+              const dayEvents = day ? getEventsForDay(day) : [];
+              const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+              return (
+                <div key={i} onClick={() => day && dayEvents.length && setSelected(dayEvents)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: '0.5rem',
+                    minHeight: '70px',
+                    padding: '0.375rem',
+                    cursor: dayEvents.length ? 'pointer' : 'default',
+                    border: isToday ? '1px solid var(--accent)' : '1px solid transparent',
+                    opacity: day ? 1 : 0,
+                  }}>
+                  {day && (
+                    <>
+                      <span style={{ fontSize: '0.75rem', color: isToday ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: isToday ? 700 : 400 }}>{day}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
+                        {dayEvents.map(e => (
+                          <div key={e.id} style={{ background: e.type_color || 'var(--accent)', borderRadius: '0.2rem', padding: '0.1rem 0.3rem', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>
+                            {e.title}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Легенда */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+            {[...new Map(events.filter(e => e.type_name).map(e => [e.type_name, e])).values()].map(e => (
+              <div key={e.type_name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: e.type_color }} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{e.type_name}</span>
+              </div>
+            ))}
+          </div>
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Модалка */}
+      {selected && (
+        <div onClick={() => setSelected(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontWeight: 700, margin: 0 }}>События дня</h2>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
+            </div>
+            {selected.map(e => (
+              <div key={e.id} style={{ background: 'var(--bg-input)', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `3px solid ${e.type_color || 'var(--accent)'}` }}>
+                <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>{e.title}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0' }}>{new Date(e.date).toLocaleString('ru-RU')}</p>
+                {e.description && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>{e.description}</p>}
+                {e.participants?.filter(p => p?.id).length > 0 && (
+                  <>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: '0.5rem 0 0.15rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Представители команды:</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
+                      {e.participants.filter(p => p?.id).map(p => p.name).join(', ')}
+                    </p>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      )}
+    </div>
     </div>
   );
 }
