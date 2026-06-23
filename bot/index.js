@@ -1,13 +1,13 @@
-const { Bot, Keyboard } = require('grammy');
+const { Bot, InlineKeyboard } = require('grammy');
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config({ path: '../.env.local' });
 
 const bot = new Bot(process.env.BOT_TOKEN);
 const sql = neon(process.env.DATABASE_URL);
 
-const mainKeyboard = new Keyboard()
-  .text('📅 Сегодня').text('📆 Неделя')
-  .resized();
+const mainKeyboard = new InlineKeyboard()
+  .text('📅 Сегодня', 'today')
+  .text('📆 Неделя', 'week');
 
 async function sendToday(ctx) {
   const telegramId = ctx.from?.id;
@@ -80,8 +80,8 @@ bot.command('start', async (ctx) => {
 
 bot.command('today', sendToday);
 bot.command('week', sendWeek);
-bot.hears('📅 Сегодня', sendToday);
-bot.hears('📆 Неделя', sendWeek);
+bot.callbackQuery('today', sendToday);
+bot.callbackQuery('week', sendWeek);
 
 bot.start();
 console.log('Бот запущен');
