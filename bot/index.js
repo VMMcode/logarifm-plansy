@@ -5,7 +5,6 @@ require('dotenv').config({ path: '../.env.local' });
 const bot = new Bot(process.env.BOT_TOKEN);
 const sql = neon(process.env.DATABASE_URL);
 
-// Регистрация при /start
 bot.command('start', async (ctx) => {
   const username = ctx.from?.username;
   if (!username) {
@@ -13,7 +12,7 @@ bot.command('start', async (ctx) => {
   }
 
   const [employee] = await sql`
-    SELECT * FROM employees WHERE username = ${username.toLowerCase()}
+    SELECT * FROM employees WHERE LOWER(username) = LOWER(${username})
   `;
 
   if (!employee) {
@@ -30,7 +29,6 @@ bot.command('start', async (ctx) => {
   );
 });
 
-// События на сегодня
 bot.command('today', async (ctx) => {
   const telegramId = ctx.from?.id;
 
@@ -59,7 +57,6 @@ bot.command('today', async (ctx) => {
   await ctx.reply(`*События на сегодня:*\n\n${text}`, { parse_mode: 'Markdown' });
 });
 
-// События на неделю
 bot.command('week', async (ctx) => {
   const telegramId = ctx.from?.id;
 
@@ -92,8 +89,5 @@ bot.command('week', async (ctx) => {
   await ctx.reply(`*События на неделю:*\n\n${text}`, { parse_mode: 'Markdown' });
 });
 
-bot.on('message', (ctx) => {
-  console.log('Получено сообщение от:', ctx.from?.username, ctx.message?.text);
-});
 bot.start();
 console.log('Бот запущен');
