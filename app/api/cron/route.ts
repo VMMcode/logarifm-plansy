@@ -8,47 +8,98 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const type = req.nextUrl.searchParams.get('type');
   const bot = new Bot(process.env.BOT_TOKEN!);
 
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (type === 'today') {
+    const events = await sql`
+      SELECT e.title, e.date, e.description, et.name as type_name, emp.telegram_id
+      FROM events e
+      JOIN event_participants ep ON e.id = ep.event_id
+      JOIN employees emp ON ep.employee_id = emp.id
+      LEFT JOIN event_types et ON e.type_id = et.id
+      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') = CURRENT_DATE AT TIME ZONE 'Europe/Moscow'
+      AND emp.telegram_id IS NOT NULL
+    `;
 
-  // события завтра
-  const tomorrowEvents = await sql`
-    SELECT e.*, emp.telegram_id, emp.name as emp_name
-    FROM events e
-    JOIN event_participants ep ON e.id = ep.event_id
-    JOIN employees emp ON ep.employee_id = emp.id
-    WHERE DATE(e.date) = DATE(${tomorrow.toISOString()})
-    AND emp.telegram_id IS NOT NULL
-  `;
-
-  // события сегодня
-  const todayEvents = await sql`
-    SELECT e.*, emp.telegram_id, emp.name as emp_name
-    FROM events e
-    JOIN event_participants ep ON e.id = ep.event_id
-    JOIN employees emp ON ep.employee_id = emp.id
-    WHERE DATE(e.date) = DATE(${now.toISOString()})
-    AND emp.telegram_id IS NOT NULL
-  `;
-
-  for (const event of tomorrowEvents) {
-    await bot.api.sendMessage(
-      event.telegram_id,
-      `⏰ Завтра: *${event.title}*\n📅 ${new Date(event.date).toLocaleString('ru-RU')}\n${event.description ? `📝 ${event.description}` : ''}`,
-      { parse_mode: 'Markdown' }
-    );
+    for (const e of events) {
+      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+      await bot.api.sendMessage(
+        e.telegram_id,
+        `☀️ *Доброе утро! События на сегодня:*\n\n` +
+        `📌 *${e.title}*\n` +
+        `🕐 ${timeStr}\n` +
+        (e.type_name ? `📂 ${e.type_name}\n` : '') +
+        (e.description ? `📝 ${e.description}` : ''),
+        { parse_mode: 'Markdown' }
+      );
+    }
+    return NextResponse.json({ ok: true, type: 'today', sent: events.length });
   }
 
-  for (const event of todayEvents) {
-    await bot.api.sendMessage(
-      event.telegram_id,
-      `🔔 Сегодня: *${event.title}*\n📅 ${new Date(event.date).toLocaleString('ru-RU')}\n${event.description ? `📝 ${event.description}` : ''}`,
-      { parse_mode: 'Markdown' }
-    );
+  if (type === 'tomorrow') {
+    const events = await sql`
+      SELECT e.title, e.date, e.description, et.name as type_name, emp.telegram_id
+      FROM events e
+      JOIN event_participants ep ON e.id = ep.event_id
+      JOIN employees emp ON ep.employee_id = emp.id
+      LEFT JOIN event_types et ON e.type_id = et.id
+      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') = (CURRENT_DATE AT TIME ZONE 'Europe/Moscow') + INTERVAL '1 day'
+      AND emp.telegram_id IS NOT NULL
+    `;
+
+    for (const e of events) {
+      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+      await bot.api.sendMessage(
+        e.telegram_id,
+        `🌙 *Завтра:*\n\n` +
+        `📌 *${e.title}*\n` +
+        `🕐 ${timeStr}\n` +
+        (e.type_name ? `📂 ${e.type_name}\n` : '') +
+        (e.description ? `📝 ${e.description}` : ''),
+        { parse_mode: 'Markdown' }
+      );
+    }
+    return NextResponse.json({ ok: true, type: 'tomorrow', sent: events.length });
   }
 
-  return NextResponse.json({ ok: true, sent: tomorrowEvents.length + todayEvents.length });
+  if (type === 'week') {
+    const events = await sql`
+      SELECT e.title, e.date, e.description, et.name as type_name, emp.telegram_id, emp.id as emp_id
+      FROM events e
+      JOIN event_participants ep ON e.id = ep.event_id
+      JOIN employees emp ON ep.employee_id = emp.id
+      LEFT JOIN event_types et ON e.type_id = et.id
+      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') > (CURRENT_DATE AT TIME ZONE 'Europe/Moscow')
+      AND DATE(e.date AT TIME ZONE 'Europe/Moscow') <= (CURRENT_DATE AT TIME ZONE 'Europe/Moscow') + INTERVAL '7 days'
+      AND emp.telegram_id IS NOT NULL
+      ORDER BY emp.id, e.date ASC
+    `;
+
+    const byEmployee: Record<number, typeof events> = {};
+    for (const e of events) {
+      if (!byEmployee[e.emp_id]) byEmployee[e.emp_id] = [];
+      byEmployee[e.emp_id].push(e);
+    }
+
+    for (const [, empEvents] of Object.entries(byEmployee)) {
+      const text = empEvents.map(e => {
+        const d = new Date(e.date);
+        const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'Europe/Moscow' });
+        const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+        return `📌 *${e.title}*\n📅 ${dateStr} в ${timeStr}\n` +
+          (e.type_name ? `📂 ${e.type_name}\n` : '') +
+          (e.description ? `📝 ${e.description}` : '');
+      }).join('\n\n');
+
+      await bot.api.sendMessage(
+        empEvents[0].telegram_id,
+        `📆 *События на следующую неделю:*\n\n${text}`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    return NextResponse.json({ ok: true, type: 'week', sent: Object.keys(byEmployee).length });
+  }
+
+  return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
 }
