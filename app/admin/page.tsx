@@ -23,6 +23,12 @@ const TrashIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
+const ChevronLeftIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
 const PencilIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -206,14 +212,14 @@ export default function AdminPage() {
           }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >← Календарь</a>
+          ><ChevronLeftIcon size={16} />Календарь</a>
         </div>
 
         {/* Табы */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
           {(['events', 'types', 'employees', 'settings'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ ...(tab === t ? s.btn : s.btnGhost), flex: '1 1 0', minWidth: t === 'settings' ? '56px' : '90px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              style={{ ...(tab === t ? s.btn : s.btnGhost), flex: t === 'settings' ? '0 0 auto' : '1 1 auto', padding: '0.5rem 0.65rem', fontSize: '0.9rem', minWidth: t === 'settings' ? '48px' : 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               {t === 'events' ? 'События' : t === 'types' ? 'Типы' : t === 'employees' ? 'Сотрудники' : <GearIcon size={18} />}
             </button>
           ))}

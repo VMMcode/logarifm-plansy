@@ -43,6 +43,13 @@ export default function CalendarPage() {
   const today = new Date();
   const monthName = current.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 
+  const todayEvents = events
+    .filter(e => {
+      const d = new Date(e.date);
+      return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   const s = {
     btn: { background: 'var(--bg-card)', color: 'var(--text-primary)', padding: isMobile ? '0.4rem 0.7rem' : '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: isMobile ? '0.85rem' : '1rem' } as React.CSSProperties,
   };
@@ -104,18 +111,24 @@ export default function CalendarPage() {
                     <>
                       <span style={{ fontSize: '0.75rem', color: isToday ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: isToday ? 700 : 400 }}>{day}</span>
                       {isMobile ? (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem' }}>
-                          {dayEvents.map(e => (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem', alignItems: 'center' }}>
+                          {dayEvents.slice(0, 4).map(e => (
                             <div key={e.id} style={{ width: '6px', height: '6px', borderRadius: '50%', background: e.type_color || 'var(--accent)' }} />
                           ))}
+                          {dayEvents.length > 4 && (
+                            <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', lineHeight: 1, fontWeight: 600 }}>+{dayEvents.length - 4}</span>
+                          )}
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
-                          {dayEvents.map(e => (
+                          {dayEvents.slice(0, 3).map(e => (
                             <div key={e.id} style={{ background: e.type_color || 'var(--accent)', borderRadius: '0.2rem', padding: '0.1rem 0.3rem', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>
                               {e.title}
                             </div>
                           ))}
+                          {dayEvents.length > 3 && (
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600, paddingLeft: '0.1rem' }}>+{dayEvents.length - 3} ещё</span>
+                          )}
                         </div>
                       )}
                     </>
@@ -135,6 +148,33 @@ export default function CalendarPage() {
             ))}
           </div>
 
+          {/* События сегодня */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.75rem', color: 'var(--text-secondary)' }}>Сегодня</h2>
+            {todayEvents.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>На сегодня событий нет</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {todayEvents.map(e => (
+                  <div key={e.id} onClick={() => setSelected([e])}
+                    style={{
+                      background: 'var(--bg-card)', borderRadius: '0.5rem', padding: '0.6rem 0.85rem',
+                      borderLeft: `3px solid ${e.type_color || 'var(--accent)'}`, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem',
+                    }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.title}</p>
+                      {e.type_name && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{e.type_name}</span>}
+                    </div>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -144,9 +184,14 @@ export default function CalendarPage() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? 0 : '1rem' }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', padding: '1.5rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              position: isMobile ? 'sticky' : 'static', top: isMobile ? '-1.5rem' : 'auto',
+              background: 'var(--bg-card)', padding: isMobile ? '0.5rem 0' : 0, zIndex: 1,
+            }}>
               <h2 style={{ fontWeight: 700, margin: 0 }}>События дня</h2>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
+              <button onClick={() => setSelected(null)} aria-label="Закрыть"
+                style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', width: '40px', height: '40px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             {selected.map(e => (
               <div key={e.id} style={{ background: 'var(--bg-input)', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `3px solid ${e.type_color || 'var(--accent)'}` }}>
@@ -163,6 +208,12 @@ export default function CalendarPage() {
                 )}
               </div>
             ))}
+            {isMobile && (
+              <button onClick={() => setSelected(null)}
+                style={{ marginTop: 'auto', background: 'var(--bg-input)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.5rem', padding: '0.85rem', fontSize: '1rem', cursor: 'pointer', minHeight: '44px' }}>
+                Закрыть
+              </button>
+            )}
           </div>
         </div>
       )}

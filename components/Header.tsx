@@ -12,8 +12,8 @@ export default function Header() {
   return (
     <header style={{
       width: '100%',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
+      backdropFilter: 'blur(6px)',
+      WebkitBackdropFilter: 'blur(6px)',
       background: 'rgba(255,255,255,0.6)',
       borderBottom: '1px solid rgba(30,62,146,0.15)',
       position: 'sticky',
