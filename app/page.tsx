@@ -36,7 +36,7 @@ export default function CalendarPage() {
   function getEventsForDay(day: number) {
     return events.filter(e => {
       const d = new Date(e.date);
-      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+      return d.getUTCFullYear() === year && d.getUTCMonth() === month && d.getUTCDate() === day;
     });
   }
 
@@ -46,7 +46,7 @@ export default function CalendarPage() {
   const todayEvents = events
     .filter(e => {
       const d = new Date(e.date);
-      return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+      return d.getUTCFullYear() === today.getFullYear() && d.getUTCMonth() === today.getMonth() && d.getUTCDate() === today.getDate();
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
