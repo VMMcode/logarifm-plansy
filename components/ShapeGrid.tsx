@@ -1,87 +1,200 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useRef, useEffect } from 'react';
+import './ShapeGrid.css';
 
-export default function ShapeGrid() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+type Direction = 'up' | 'down' | 'left' | 'right' | 'diagonal';
+type Shape = 'square' | 'hexagon' | 'circle' | 'triangle';
+
+interface ShapeGridProps {
+  direction?: Direction;
+  speed?: number;
+  borderColor?: string;
+  squareSize?: number;
+  hoverFillColor?: string;
+  shape?: Shape;
+  hoverTrailAmount?: number;
+  className?: string;
+}
+
+interface GridSquare {
+  x: number;
+  y: number;
+}
+
+const ShapeGrid = ({
+  direction = 'right',
+  speed = 1,
+  borderColor = '#999',
+  squareSize = 40,
+  hoverFillColor = '#222',
+  shape = 'square',
+  hoverTrailAmount = 0,
+  className = ''
+}: ShapeGridProps) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<number | null>(null);
+  const numSquaresX = useRef(0);
+  const numSquaresY = useRef(0);
+  const gridOffset = useRef({ x: 0, y: 0 });
+  const hoveredSquareRef = useRef<GridSquare | null>(null);
+  const trailRef = useRef<GridSquare[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const size = 40;
-    let mouse = { x: -999, y: -999 };
+    const resizeCanvas = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      numSquaresX.current = Math.ceil(canvas.width / squareSize) + 1;
+      numSquaresY.current = Math.ceil(canvas.height / squareSize) + 1;
+    };
 
-    function resize() {
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const drawShape = (px: number, py: number, fill: boolean) => {
+      const s = squareSize;
+      const cx = px + s / 2;
+      const cy = py + s / 2;
+      const r = s / 2;
+
+      ctx.beginPath();
+      switch (shape) {
+        case 'circle':
+          ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+          break;
+        case 'triangle':
+          ctx.moveTo(cx, py + s * 0.1);
+          ctx.lineTo(px + s * 0.9, py + s * 0.9);
+          ctx.lineTo(px + s * 0.1, py + s * 0.9);
+          ctx.closePath();
+          break;
+        case 'hexagon': {
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const hx = cx + r * 0.9 * Math.cos(angle);
+            const hy = cy + r * 0.9 * Math.sin(angle);
+            if (i === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          break;
+        }
+        case 'square':
+        default:
+          ctx.rect(px, py, s, s);
+          break;
+      }
+      if (fill) ctx.fill();
+      else ctx.stroke();
+    };
+
+    const drawGrid = () => {
       if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      draw();
-    }
-
-    function draw() {
-      if (!canvas || !ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const cols = Math.ceil(canvas.width / size) + 1;
-      const rows = Math.ceil(canvas.height / size) + 1;
+      const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
+      const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x = c * size;
-          const y = r * size;
-          const dx = x - mouse.x;
-          const dy = y - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 120;
-          const isHover = dist < maxDist;
+      ctx.lineWidth = 1;
 
-          ctx.strokeStyle = isHover ? '#1E3E92' : '#c8ccd8';
-          ctx.lineWidth = isHover ? 1.5 : 0.8;
-          ctx.globalAlpha = isHover ? 0.6 : 0.35;
+      for (let x = startX; x < canvas.width + squareSize; x += squareSize) {
+        for (let y = startY; y < canvas.height + squareSize; y += squareSize) {
+          const squareX = x - (gridOffset.current.x % squareSize);
+          const squareY = y - (gridOffset.current.y % squareSize);
 
-          ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
+          const gx = Math.floor((x - startX) / squareSize);
+          const gy = Math.floor((y - startY) / squareSize);
+
+          // Hover + trail fill
+          const trailIndex = trailRef.current.findIndex(t => t.x === gx && t.y === gy);
+          const isHovered =
+            hoveredSquareRef.current && hoveredSquareRef.current.x === gx && hoveredSquareRef.current.y === gy;
+
+          if (isHovered || trailIndex !== -1) {
+            const depth = isHovered ? 0 : trailIndex + 1;
+            const alpha = Math.max(0, 1 - depth / (hoverTrailAmount + 1));
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = hoverFillColor;
+            drawShape(squareX, squareY, true);
+            ctx.globalAlpha = 1;
+          }
+
+          ctx.strokeStyle = borderColor;
+          drawShape(squareX, squareY, false);
         }
       }
-      ctx.globalAlpha = 1;
-    }
+    };
 
-    function onMouseMove(e: MouseEvent) {
-      mouse = { x: e.clientX, y: e.clientY };
-      draw();
-    }
+    const updateAnimation = () => {
+      const effectiveSpeed = Math.max(speed, 0.1);
+      switch (direction) {
+        case 'right':
+          gridOffset.current.x = (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+          break;
+        case 'left':
+          gridOffset.current.x = (gridOffset.current.x + effectiveSpeed + squareSize) % squareSize;
+          break;
+        case 'up':
+          gridOffset.current.y = (gridOffset.current.y + effectiveSpeed + squareSize) % squareSize;
+          break;
+        case 'down':
+          gridOffset.current.y = (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+          break;
+        case 'diagonal':
+          gridOffset.current.x = (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+          gridOffset.current.y = (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+          break;
+        default:
+          break;
+      }
 
-    function onMouseLeave() {
-      mouse = { x: -999, y: -999 };
-      draw();
-    }
+      drawGrid();
+      requestRef.current = requestAnimationFrame(updateAnimation);
+    };
 
-    resize();
-    window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseleave', onMouseLeave);
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
+      const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
+
+      const hoveredSquareX = Math.floor((mouseX + gridOffset.current.x - startX) / squareSize);
+      const hoveredSquareY = Math.floor((mouseY + gridOffset.current.y - startY) / squareSize);
+
+      const prev = hoveredSquareRef.current;
+      if (!prev || prev.x !== hoveredSquareX || prev.y !== hoveredSquareY) {
+        if (prev && hoverTrailAmount > 0) {
+          trailRef.current.unshift({ x: prev.x, y: prev.y });
+          trailRef.current = trailRef.current.slice(0, hoverTrailAmount);
+        }
+        hoveredSquareRef.current = { x: hoveredSquareX, y: hoveredSquareY };
+      }
+    };
+
+    const handleMouseLeave = () => {
+      hoveredSquareRef.current = null;
+      trailRef.current = [];
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    requestRef.current = requestAnimationFrame(updateAnimation);
 
     return () => {
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseleave', onMouseLeave);
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, []);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize, shape, hoverTrailAmount]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}
-    />
-  );
-}
+  return <canvas ref={canvasRef} className={`shapegrid-canvas ${className}`} />;
+};
+
+export default ShapeGrid;

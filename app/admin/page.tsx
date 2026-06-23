@@ -199,7 +199,8 @@ export default function AdminPage() {
           <h1 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Управление</h1>
           <a href="/" style={{
             background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.875rem',
-            textDecoration: 'none', padding: '0.5rem 1rem', borderRadius: '999px',
+            textDecoration: 'none', padding: '0.4rem 1rem', borderRadius: '999px',
+            border: '1px solid var(--bg-hover)',
             display: 'inline-flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap',
             transition: 'background 0.15s, color 0.15s',
           }}
@@ -235,7 +236,7 @@ export default function AdminPage() {
                 {employees.map(emp => (
                   <div key={emp.id} style={s.row}>
                     <span>{emp.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>@{emp.username}</span></span>
-                    <button onClick={() => deleteEmployee(emp.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon /></button>
+                    <button onClick={() => deleteEmployee(emp.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon size={16} /></button>
                   </div>
                 ))}
               </div>
@@ -264,7 +265,7 @@ export default function AdminPage() {
                       <div style={{ width: '14px', height: '14px', borderRadius: '3px', background: t.color, flexShrink: 0 }} />
                       <span>{t.name}</span>
                     </div>
-                    <button onClick={() => deleteType(t.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon /></button>
+                    <button onClick={() => deleteType(t.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon size={16} /></button>
                   </div>
                 ))}
               </div>
@@ -336,9 +337,9 @@ export default function AdminPage() {
                   return (
                     <button key={t.id} onClick={() => setEventFilter(t.id)}
                       style={{
-                        flexShrink: 0, padding: '0.35rem 0.85rem', borderRadius: '999px', border: active ? 'none' : `1px solid ${t.color}`, cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap',
-                        background: active ? t.color : 'transparent',
-                        color: active ? '#ffffff' : t.color,
+                        flexShrink: 0, padding: '0.35rem 0.85rem', borderRadius: '999px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', whiteSpace: 'nowrap',
+                        background: active ? t.color : 'var(--bg-input)',
+                        color: active ? '#ffffff' : 'var(--text-secondary)',
                       }}>{t.name}</button>
                   );
                 })}
@@ -363,8 +364,8 @@ export default function AdminPage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '0.1rem', marginLeft: '0.5rem', flexShrink: 0 }}>
-                      <button onClick={() => startEdit(event)} style={{ ...s.iconBtn, color: 'var(--text-secondary)' }} aria-label="Редактировать"><PencilIcon /></button>
-                      <button onClick={() => deleteEvent(event.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon /></button>
+                      <button onClick={() => startEdit(event)} style={{ ...s.iconBtn, color: 'var(--text-secondary)' }} aria-label="Редактировать"><PencilIcon size={16} /></button>
+                      <button onClick={() => deleteEvent(event.id)} style={{ ...s.iconBtn, color: 'var(--danger)' }} aria-label="Удалить"><TrashIcon size={16} /></button>
                     </div>
                   </div>
                 ))}

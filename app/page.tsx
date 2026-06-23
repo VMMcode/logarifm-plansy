@@ -49,7 +49,17 @@ export default function CalendarPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
-      <ShapeGrid />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+        <ShapeGrid
+          speed={0.3}
+          squareSize={40}
+          direction="diagonal"
+          borderColor="#c8ccd8"
+          hoverFillColor="#1E3E92"
+          shape="square"
+          hoverTrailAmount={3}
+        />
+      </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
       <Header />
       <div style={{ padding: '1rem' }}>
