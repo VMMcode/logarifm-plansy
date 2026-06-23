@@ -20,13 +20,13 @@ async function sendToday(ctx) {
     JOIN employees emp ON ep.employee_id = emp.id
     LEFT JOIN event_types et ON e.type_id = et.id
     WHERE emp.telegram_id = ${telegramId}
-    AND DATE(e.date) = CURRENT_DATE
+    AND (e.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Moscow')::date
     ORDER BY e.date ASC
   `;
   if (!events.length) return ctx.reply('На сегодня событий нет 🎉', { reply_markup: mainKeyboard });
   const text = events.map(e =>
     `📌 *${e.title}*\n` +
-    `🕐 ${new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}\n` +
+    `🕐 ${new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}\n` +
     (e.type_name ? `📂 ${e.type_name}\n` : '') +
     (e.description ? `📝 ${e.description}` : '')
   ).join('\n\n');
@@ -42,15 +42,15 @@ async function sendWeek(ctx) {
     JOIN employees emp ON ep.employee_id = emp.id
     LEFT JOIN event_types et ON e.type_id = et.id
     WHERE emp.telegram_id = ${telegramId}
-    AND e.date >= CURRENT_DATE
-    AND e.date < CURRENT_DATE + INTERVAL '7 days'
+    AND (e.date AT TIME ZONE 'UTC')::date >= (now() AT TIME ZONE 'Europe/Moscow')::date
+    AND (e.date AT TIME ZONE 'UTC')::date < (now() AT TIME ZONE 'Europe/Moscow')::date + 7
     ORDER BY e.date ASC
   `;
   if (!events.length) return ctx.reply('На эту неделю событий нет 🎉', { reply_markup: mainKeyboard });
   const text = events.map(e => {
     const d = new Date(e.date);
-    const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' });
-    const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'UTC' });
+    const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
     return `📌 *${e.title}*\n` +
       `📅 ${dateStr} в ${timeStr}\n` +
       (e.type_name ? `📂 ${e.type_name}\n` : '') +

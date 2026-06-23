@@ -18,12 +18,12 @@ export async function GET(req: NextRequest) {
       JOIN event_participants ep ON e.id = ep.event_id
       JOIN employees emp ON ep.employee_id = emp.id
       LEFT JOIN event_types et ON e.type_id = et.id
-      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') = CURRENT_DATE AT TIME ZONE 'Europe/Moscow'
+      WHERE (e.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Moscow')::date
       AND emp.telegram_id IS NOT NULL
     `;
 
     for (const e of events) {
-      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
       await bot.api.sendMessage(
         e.telegram_id,
         `☀️ *Доброе утро! События на сегодня:*\n\n` +
@@ -44,12 +44,12 @@ export async function GET(req: NextRequest) {
       JOIN event_participants ep ON e.id = ep.event_id
       JOIN employees emp ON ep.employee_id = emp.id
       LEFT JOIN event_types et ON e.type_id = et.id
-      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') = (CURRENT_DATE AT TIME ZONE 'Europe/Moscow') + INTERVAL '1 day'
+      WHERE (e.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Moscow')::date + 1
       AND emp.telegram_id IS NOT NULL
     `;
 
     for (const e of events) {
-      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
       await bot.api.sendMessage(
         e.telegram_id,
         `🌙 *Завтра:*\n\n` +
@@ -70,8 +70,8 @@ export async function GET(req: NextRequest) {
       JOIN event_participants ep ON e.id = ep.event_id
       JOIN employees emp ON ep.employee_id = emp.id
       LEFT JOIN event_types et ON e.type_id = et.id
-      WHERE DATE(e.date AT TIME ZONE 'Europe/Moscow') > (CURRENT_DATE AT TIME ZONE 'Europe/Moscow')
-      AND DATE(e.date AT TIME ZONE 'Europe/Moscow') <= (CURRENT_DATE AT TIME ZONE 'Europe/Moscow') + INTERVAL '7 days'
+      WHERE (e.date AT TIME ZONE 'UTC')::date > (now() AT TIME ZONE 'Europe/Moscow')::date
+      AND (e.date AT TIME ZONE 'UTC')::date <= (now() AT TIME ZONE 'Europe/Moscow')::date + 7
       AND emp.telegram_id IS NOT NULL
       ORDER BY emp.id, e.date ASC
     `;
@@ -85,8 +85,8 @@ export async function GET(req: NextRequest) {
     for (const [, empEvents] of Object.entries(byEmployee)) {
       const text = empEvents.map(e => {
         const d = new Date(e.date);
-        const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'Europe/Moscow' });
-        const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+        const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'UTC' });
+        const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
         return `📌 *${e.title}*\n📅 ${dateStr} в ${timeStr}\n` +
           (e.type_name ? `📂 ${e.type_name}\n` : '') +
           (e.description ? `📝 ${e.description}` : '');
