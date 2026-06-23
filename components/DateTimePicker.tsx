@@ -110,6 +110,9 @@ export default function DateTimePicker({ value, onChange }: Props) {
         .react-datepicker__day--today.react-datepicker__day--selected {
           color: #ffffff !important;
         }
+        .react-datepicker__day--outside-month {
+          color: var(--text-muted) !important;
+        }
         .react-datepicker__navigation-icon::before {
           border-color: var(--text-muted) !important;
         }

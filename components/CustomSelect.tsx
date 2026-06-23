@@ -30,7 +30,7 @@ const customStyles = {
   option: (base: any, state: any) => ({
     ...base,
     background: state.isSelected ? 'var(--accent)' : state.isFocused ? 'var(--bg-input)' : 'transparent',
-    color: 'var(--text-primary)',
+    color: state.isSelected ? '#ffffff' : 'var(--text-primary)',
     cursor: 'pointer',
     borderRadius: '0.25rem',
     margin: '2px 4px',

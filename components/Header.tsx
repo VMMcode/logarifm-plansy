@@ -24,7 +24,7 @@ export default function Header() {
       alignItems: 'center',
       justifyContent: 'space-between',
     }}>
-      <Image src="/logo.png" alt="Логотип" height={40} width={120} style={{ objectFit: 'contain', objectPosition: 'left' }} />
+      <Image src="/logo.png" alt="Логотип" height={40} width={40} style={{ objectFit: 'cover', borderRadius: '50%' }} />
       {motto && (
         <p style={{
           color: 'var(--text-secondary)',

@@ -41,6 +41,33 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(event);
 }
 
+export async function PUT(req: NextRequest) {
+  const auth = req.headers.get('x-admin-password');
+  if (auth !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id, title, type_id, date, description, participant_ids } = await req.json();
+
+  const [event] = await sql`
+    UPDATE events
+    SET title = ${title}, type_id = ${type_id}, date = ${date}, description = ${description}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+
+  await sql`DELETE FROM event_participants WHERE event_id = ${id}`;
+
+  if (participant_ids?.length) {
+    await sql`
+      INSERT INTO event_participants (event_id, employee_id)
+      SELECT ${id}, unnest(${participant_ids}::int[])
+    `;
+  }
+
+  return NextResponse.json(event);
+}
+
 export async function DELETE(req: NextRequest) {
   const auth = req.headers.get('x-admin-password');
   if (auth !== process.env.ADMIN_PASSWORD) {

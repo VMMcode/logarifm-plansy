@@ -10,9 +10,17 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [current, setCurrent] = useState(new Date());
   const [selected, setSelected] = useState<Event[] | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetch('/api/events').then(r => r.json()).then(setEvents);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   const year = current.getFullYear();
@@ -36,7 +44,7 @@ export default function CalendarPage() {
   const monthName = current.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 
   const s = {
-    btn: { background: 'var(--bg-card)', color: 'var(--text-primary)', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' } as React.CSSProperties,
+    btn: { background: 'var(--bg-card)', color: 'var(--text-primary)', padding: isMobile ? '0.4rem 0.7rem' : '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: isMobile ? '0.85rem' : '1rem' } as React.CSSProperties,
   };
 
   return (
@@ -76,8 +84,8 @@ export default function CalendarPage() {
                   style={{
                     background: 'var(--bg-card)',
                     borderRadius: '0.5rem',
-                    minHeight: '70px',
-                    padding: '0.375rem',
+                    minHeight: isMobile ? '50px' : '70px',
+                    padding: isMobile ? '0.25rem' : '0.375rem',
                     cursor: dayEvents.length ? 'pointer' : 'default',
                     border: isToday ? '1px solid var(--accent)' : '1px solid transparent',
                     opacity: day ? 1 : 0,
@@ -85,13 +93,21 @@ export default function CalendarPage() {
                   {day && (
                     <>
                       <span style={{ fontSize: '0.75rem', color: isToday ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: isToday ? 700 : 400 }}>{day}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
-                        {dayEvents.map(e => (
-                          <div key={e.id} style={{ background: e.type_color || 'var(--accent)', borderRadius: '0.2rem', padding: '0.1rem 0.3rem', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>
-                            {e.title}
-                          </div>
-                        ))}
-                      </div>
+                      {isMobile ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem' }}>
+                          {dayEvents.map(e => (
+                            <div key={e.id} style={{ width: '6px', height: '6px', borderRadius: '50%', background: e.type_color || 'var(--accent)' }} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
+                          {dayEvents.map(e => (
+                            <div key={e.id} style={{ background: e.type_color || 'var(--accent)', borderRadius: '0.2rem', padding: '0.1rem 0.3rem', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>
+                              {e.title}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -115,9 +131,9 @@ export default function CalendarPage() {
       {/* Модалка */}
       {selected && (
         <div onClick={() => setSelected(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? 0 : '1rem' }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', padding: '1.5rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontWeight: 700, margin: 0 }}>События дня</h2>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
