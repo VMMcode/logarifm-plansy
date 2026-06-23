@@ -7,7 +7,9 @@ const sql = neon(process.env.DATABASE_URL);
 
 const mainKeyboard = new InlineKeyboard()
   .text('📅 Сегодня', 'today')
-  .text('📆 Неделя', 'week');
+  .text('📆 Неделя', 'week')
+  .row()
+  .url('🗓 Открыть календарь', 'https://logarifm-plansy.vercel.app');
 
 async function sendToday(ctx) {
   const telegramId = ctx.from?.id;
