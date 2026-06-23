@@ -3,7 +3,8 @@ import sql from '@/lib/db';
 
 export async function GET() {
   const events = await sql`
-    SELECT e.*, 
+    SELECT e.id, e.title, e.type_id, e.description,
+      to_char(e.date AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS') as date,
       et.name as type_name,
       et.color as type_color,
       json_agg(json_build_object('id', emp.id, 'name', emp.name, 'username', emp.username)) as participants
