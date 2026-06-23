@@ -58,13 +58,14 @@ export default function CalendarPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
       <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
         <ShapeGrid
-          speed={0.3}
+          speed={0.15}
           squareSize={40}
-          direction="diagonal"
-          borderColor="#c8ccd8"
-          hoverFillColor="#1E3E92"
+          direction="down"
+          borderColor="rgba(200, 204, 216, 0.5)"
+          hoverFillColor="#EB582C"
           shape="square"
           hoverTrailAmount={3}
+          randomFill
         />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>

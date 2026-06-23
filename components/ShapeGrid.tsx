@@ -13,12 +13,18 @@ interface ShapeGridProps {
   hoverFillColor?: string;
   shape?: Shape;
   hoverTrailAmount?: number;
+  randomFill?: boolean;
+  randomInterval?: number;
   className?: string;
 }
 
 interface GridSquare {
   x: number;
   y: number;
+}
+
+interface RandomSquare extends GridSquare {
+  born: number;
 }
 
 const ShapeGrid = ({
@@ -29,6 +35,8 @@ const ShapeGrid = ({
   hoverFillColor = '#222',
   shape = 'square',
   hoverTrailAmount = 0,
+  randomFill = false,
+  randomInterval = 450,
   className = ''
 }: ShapeGridProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -38,6 +46,8 @@ const ShapeGrid = ({
   const gridOffset = useRef({ x: 0, y: 0 });
   const hoveredSquareRef = useRef<GridSquare | null>(null);
   const trailRef = useRef<GridSquare[]>([]);
+  const randomRef = useRef<RandomSquare[]>([]);
+  const lastSpawnRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -92,7 +102,9 @@ const ShapeGrid = ({
       else ctx.stroke();
     };
 
-    const drawGrid = () => {
+    const RANDOM_LIFE = 1600; // мс жизни случайной подсветки
+
+    const drawGrid = (now: number) => {
       if (!canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -114,10 +126,24 @@ const ShapeGrid = ({
           const isHovered =
             hoveredSquareRef.current && hoveredSquareRef.current.x === gx && hoveredSquareRef.current.y === gy;
 
+          let fillAlpha = 0;
           if (isHovered || trailIndex !== -1) {
             const depth = isHovered ? 0 : trailIndex + 1;
-            const alpha = Math.max(0, 1 - depth / (hoverTrailAmount + 1));
-            ctx.globalAlpha = alpha;
+            fillAlpha = Math.max(fillAlpha, 1 - depth / (hoverTrailAmount + 1));
+          }
+
+          // Случайная подсветка клеток
+          const rnd = randomRef.current.find(r => r.x === gx && r.y === gy);
+          if (rnd) {
+            const age = now - rnd.born;
+            const life = 1 - age / RANDOM_LIFE;
+            // плавное появление и затухание
+            const eased = Math.sin(Math.max(0, Math.min(1, life)) * Math.PI);
+            fillAlpha = Math.max(fillAlpha, eased * 0.85);
+          }
+
+          if (fillAlpha > 0) {
+            ctx.globalAlpha = fillAlpha;
             ctx.fillStyle = hoverFillColor;
             drawShape(squareX, squareY, true);
             ctx.globalAlpha = 1;
@@ -129,7 +155,20 @@ const ShapeGrid = ({
       }
     };
 
-    const updateAnimation = () => {
+    const updateAnimation = (now: number) => {
+      // Спавн и очистка случайных подсветок
+      if (randomFill) {
+        randomRef.current = randomRef.current.filter(r => now - r.born < RANDOM_LIFE);
+        if (now - lastSpawnRef.current > randomInterval) {
+          lastSpawnRef.current = now;
+          randomRef.current.push({
+            x: Math.floor(Math.random() * numSquaresX.current),
+            y: Math.floor(Math.random() * numSquaresY.current),
+            born: now,
+          });
+        }
+      }
+
       const effectiveSpeed = Math.max(speed, 0.1);
       switch (direction) {
         case 'right':
@@ -152,7 +191,7 @@ const ShapeGrid = ({
           break;
       }
 
-      drawGrid();
+      drawGrid(now);
       requestRef.current = requestAnimationFrame(updateAnimation);
     };
 
@@ -192,7 +231,7 @@ const ShapeGrid = ({
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [direction, speed, borderColor, hoverFillColor, squareSize, shape, hoverTrailAmount]);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize, shape, hoverTrailAmount, randomFill, randomInterval]);
 
   return <canvas ref={canvasRef} className={`shapegrid-canvas ${className}`} />;
 };
