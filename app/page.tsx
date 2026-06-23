@@ -6,9 +6,21 @@ import ShapeGrid from '@/components/ShapeGrid';
 type Employee = { id: number; name: string; username: string };
 type Event = { id: number; title: string; type_name: string; type_color: string; date: string; description: string; participants: Employee[] };
 
+// Текущий момент в зоне Москвы, независимо от часового пояса хоста (важно для SSR на Vercel, который работает в UTC)
+function getMoscowNow(): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const o: Record<string, string> = {};
+  for (const p of parts) o[p.type] = p.value;
+  return new Date(Number(o.year), Number(o.month) - 1, Number(o.day), Number(o.hour === '24' ? '0' : o.hour), Number(o.minute), Number(o.second));
+}
+
 export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [current, setCurrent] = useState(() => new Date());
+  const [current, setCurrent] = useState(() => getMoscowNow());
   const [selected, setSelected] = useState<Event[] | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -40,7 +52,7 @@ export default function CalendarPage() {
     });
   }
 
-  const today = new Date();
+  const today = getMoscowNow();
   const monthName = current.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
 
   const todayEvents = events
