@@ -8,7 +8,7 @@ type Event = { id: number; title: string; type_name: string; type_color: string;
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [current, setCurrent] = useState(new Date());
+  const [current, setCurrent] = useState(() => new Date());
   const [selected, setSelected] = useState<Event[] | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
