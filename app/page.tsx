@@ -195,9 +195,9 @@ export default function CalendarPage() {
       {/* Модалка */}
       {selected && (
         <div onClick={() => setSelected(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? 0 : '1rem' }}>
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 200, padding: isMobile ? 0 : '1rem' }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', padding: '1.5rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', padding: '1.5rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               position: isMobile ? 'sticky' : 'static', top: isMobile ? '-1.5rem' : 'auto',
