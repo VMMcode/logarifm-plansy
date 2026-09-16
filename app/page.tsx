@@ -197,9 +197,9 @@ export default function CalendarPage() {
         <div onClick={() => setSelected(null)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 200, padding: isMobile ? 0 : '1rem' }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '90vh', overflow: 'hidden' }}>
+            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div className="modal-scroll"
-              style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              style={{ padding: '1.5rem', flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 position: isMobile ? 'sticky' : 'static', top: isMobile ? '-1.5rem' : 'auto',
