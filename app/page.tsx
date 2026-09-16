@@ -194,40 +194,43 @@ export default function CalendarPage() {
 
       {/* Модалка */}
       {selected && (
-        <div onClick={() => setSelected(null)} className="modal-scroll"
+        <div onClick={() => setSelected(null)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'center', zIndex: 200, padding: isMobile ? 0 : '1rem' }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', padding: '1.5rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              position: isMobile ? 'sticky' : 'static', top: isMobile ? '-1.5rem' : 'auto',
-              background: 'var(--bg-card)', padding: isMobile ? '0.5rem 0' : 0, zIndex: 1,
-            }}>
-              <h2 style={{ fontWeight: 700, margin: 0 }}>События дня</h2>
-              <button onClick={() => setSelected(null)} aria-label="Закрыть"
-                style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', width: '40px', height: '40px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
-            </div>
-            {selected.map(e => (
-              <div key={e.id} style={{ background: 'var(--bg-input)', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `3px solid ${e.type_color || 'var(--accent)'}` }}>
-                <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>{e.title}</p>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0' }}>{new Date(e.date).toLocaleString('ru-RU')}</p>
-                {e.description && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>{e.description}</p>}
-                {e.participants?.filter(p => p?.id).length > 0 && (
-                  <>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: '0.5rem 0 0.15rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Представители команды:</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
-                      {e.participants.filter(p => p?.id).map(p => p.name).join(', ')}
-                    </p>
-                  </>
-                )}
+            style={{ background: 'var(--bg-card)', borderRadius: isMobile ? 0 : '1rem', width: '100%', maxWidth: isMobile ? '100%' : '360px', height: isMobile ? '100%' : 'auto', maxHeight: isMobile ? '100%' : '90vh', overflow: 'hidden' }}>
+            <div className="modal-scroll"
+              style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                position: isMobile ? 'sticky' : 'static', top: isMobile ? '-1.5rem' : 'auto',
+                background: 'var(--bg-card)', padding: isMobile ? '0.5rem 0' : 0, zIndex: 1,
+              }}>
+                <h2 style={{ fontWeight: 700, margin: 0 }}>События дня</h2>
+                <button onClick={() => setSelected(null)} aria-label="Закрыть"
+                  style={{ background: 'var(--bg-input)', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.1rem', width: '40px', height: '40px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
               </div>
-            ))}
-            {isMobile && (
-              <button onClick={() => setSelected(null)}
-                style={{ marginTop: 'auto', background: 'var(--bg-input)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.5rem', padding: '0.85rem', fontSize: '1rem', cursor: 'pointer', minHeight: '44px' }}>
-                Закрыть
-              </button>
-            )}
+              {selected.map(e => (
+                <div key={e.id} style={{ background: 'var(--bg-input)', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `3px solid ${e.type_color || 'var(--accent)'}` }}>
+                  <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>{e.title}</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0' }}>{new Date(e.date).toLocaleString('ru-RU')}</p>
+                  {e.description && <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>{e.description}</p>}
+                  {e.participants?.filter(p => p?.id).length > 0 && (
+                    <>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: '0.5rem 0 0.15rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Представители команды:</p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
+                        {e.participants.filter(p => p?.id).map(p => p.name).join(', ')}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ))}
+              {isMobile && (
+                <button onClick={() => setSelected(null)}
+                  style={{ marginTop: 'auto', background: 'var(--bg-input)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.5rem', padding: '0.85rem', fontSize: '1rem', cursor: 'pointer', minHeight: '44px' }}>
+                  Закрыть
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
