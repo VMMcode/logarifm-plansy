@@ -115,6 +115,7 @@ export default function CalendarPage() {
                     background: 'var(--bg-card)',
                     borderRadius: '0.5rem',
                     minHeight: isMobile ? '50px' : '70px',
+                    minWidth: 0,
                     padding: isMobile ? '0.25rem' : '0.375rem',
                     cursor: dayEvents.length ? 'pointer' : 'default',
                     border: isToday ? '1px solid var(--accent)' : '1px solid transparent',
@@ -133,7 +134,7 @@ export default function CalendarPage() {
                           )}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.2rem', minWidth: 0 }}>
                           {dayEvents.slice(0, 3).map(e => (
                             <div key={e.id} style={{ background: e.type_color || 'var(--accent)', borderRadius: '0.2rem', padding: '0.1rem 0.3rem', fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>
                               {e.title}
