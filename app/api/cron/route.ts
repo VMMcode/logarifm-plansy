@@ -3,6 +3,8 @@ import sql from '@/lib/db';
 import { Bot } from 'grammy';
 
 export async function GET(req: NextRequest) {
+  const start = Date.now();
+
   const secret = req.nextUrl.searchParams.get('secret');
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest) {
       AND emp.telegram_id IS NOT NULL
     `;
 
-    for (const e of events) {
+    const results = await Promise.allSettled(events.map(async (e) => {
       const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
       await bot.api.sendMessage(
         e.telegram_id,
@@ -33,8 +35,10 @@ export async function GET(req: NextRequest) {
         (e.description ? `📝 ${e.description}` : ''),
         { parse_mode: 'Markdown' }
       );
-    }
-    return NextResponse.json({ ok: true, type: 'today', sent: events.length });
+    }));
+
+    const failed = results.filter(r => r.status === 'rejected').length;
+    return NextResponse.json({ ok: true, type: 'today', sent: events.length - failed, failed, duration_ms: Date.now() - start });
   }
 
   if (type === 'tomorrow') {
@@ -48,7 +52,7 @@ export async function GET(req: NextRequest) {
       AND emp.telegram_id IS NOT NULL
     `;
 
-    for (const e of events) {
+    const results = await Promise.allSettled(events.map(async (e) => {
       const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
       await bot.api.sendMessage(
         e.telegram_id,
@@ -59,8 +63,10 @@ export async function GET(req: NextRequest) {
         (e.description ? `📝 ${e.description}` : ''),
         { parse_mode: 'Markdown' }
       );
-    }
-    return NextResponse.json({ ok: true, type: 'tomorrow', sent: events.length });
+    }));
+
+    const failed = results.filter(r => r.status === 'rejected').length;
+    return NextResponse.json({ ok: true, type: 'tomorrow', sent: events.length - failed, failed, duration_ms: Date.now() - start });
   }
 
   if (type === 'week') {
@@ -82,7 +88,7 @@ export async function GET(req: NextRequest) {
       byEmployee[e.emp_id].push(e);
     }
 
-    for (const [, empEvents] of Object.entries(byEmployee)) {
+    const results = await Promise.allSettled(Object.values(byEmployee).map(async (empEvents) => {
       const text = empEvents.map(e => {
         const d = new Date(e.date);
         const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'UTC' });
@@ -97,8 +103,50 @@ export async function GET(req: NextRequest) {
         `📆 *События на следующую неделю:*\n\n${text}`,
         { parse_mode: 'Markdown' }
       );
+    }));
+
+    const failed = results.filter(r => r.status === 'rejected').length;
+    return NextResponse.json({ ok: true, type: 'week', sent: Object.keys(byEmployee).length - failed, failed, duration_ms: Date.now() - start });
+  }
+
+  if (type === 'hourly') {
+    const events = await sql`
+      SELECT e.id, e.title, e.date, e.description, et.name as type_name, emp.telegram_id
+      FROM events e
+      JOIN event_participants ep ON e.id = ep.event_id
+      JOIN employees emp ON ep.employee_id = emp.id
+      LEFT JOIN event_types et ON e.type_id = et.id
+      WHERE e.date <= now() + interval '1 hour'
+      AND e.date > now()
+      AND e.reminder_1h_sent = false
+      AND emp.telegram_id IS NOT NULL
+    `;
+
+    const results = await Promise.allSettled(events.map(async (e) => {
+      const timeStr = new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+      await bot.api.sendMessage(
+        e.telegram_id,
+        `⏰ *Через час:*\n\n` +
+        `📌 *${e.title}*\n` +
+        `🕐 ${timeStr}\n` +
+        (e.type_name ? `📂 ${e.type_name}\n` : '') +
+        (e.description ? `📝 ${e.description}` : ''),
+        { parse_mode: 'Markdown' }
+      );
+    }));
+
+    const eventIds = [...new Set(events.map(e => e.id))];
+    const failedEventIds = new Set(
+      events.filter((_, i) => results[i].status === 'rejected').map(e => e.id)
+    );
+    const idsToMark = eventIds.filter(id => !failedEventIds.has(id));
+
+    if (idsToMark.length > 0) {
+      await sql`UPDATE events SET reminder_1h_sent = true WHERE id = ANY(${idsToMark})`;
     }
-    return NextResponse.json({ ok: true, type: 'week', sent: Object.keys(byEmployee).length });
+
+    const failed = results.filter(r => r.status === 'rejected').length;
+    return NextResponse.json({ ok: true, type: 'hourly', sent: events.length - failed, failed, duration_ms: Date.now() - start });
   }
 
   return NextResponse.json({ error: 'Unknown type' }, { status: 400 });
