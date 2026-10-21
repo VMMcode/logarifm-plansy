@@ -1,0 +1,96 @@
+import { Bot, InlineKeyboard, webhookCallback, Context } from 'grammy';
+import sql from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
+
+const bot = new Bot(process.env.BOT_TOKEN!);
+
+const mainKeyboard = new InlineKeyboard()
+  .text('📅 Сегодня', 'today')
+  .text('📆 Неделя', 'week')
+  .row()
+  .url('🗓 Открыть календарь', 'https://logarifm-plansy.vercel.app');
+
+async function sendToday(ctx: Context) {
+  const telegramId = ctx.from?.id;
+  const events = await sql`
+    SELECT e.title, e.date, e.description, et.name as type_name
+    FROM events e
+    JOIN event_participants ep ON e.id = ep.event_id
+    JOIN employees emp ON ep.employee_id = emp.id
+    LEFT JOIN event_types et ON e.type_id = et.id
+    WHERE emp.telegram_id = ${telegramId}
+    AND (e.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Moscow')::date
+    ORDER BY e.date ASC
+  `;
+  if (!events.length) return ctx.reply('На сегодня событий нет 🎉', { reply_markup: mainKeyboard });
+  const text = events.map(e =>
+    `📌 *${e.title}*\n` +
+    `🕐 ${new Date(e.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}\n` +
+    (e.type_name ? `📂 ${e.type_name}\n` : '') +
+    (e.description ? `📝 ${e.description}` : '')
+  ).join('\n\n');
+  await ctx.reply(`*События на сегодня:*\n\n${text}`, { parse_mode: 'Markdown', reply_markup: mainKeyboard });
+}
+
+async function sendWeek(ctx: Context) {
+  const telegramId = ctx.from?.id;
+  const events = await sql`
+    SELECT e.title, e.date, e.description, et.name as type_name
+    FROM events e
+    JOIN event_participants ep ON e.id = ep.event_id
+    JOIN employees emp ON ep.employee_id = emp.id
+    LEFT JOIN event_types et ON e.type_id = et.id
+    WHERE emp.telegram_id = ${telegramId}
+    AND (e.date AT TIME ZONE 'UTC')::date >= (now() AT TIME ZONE 'Europe/Moscow')::date
+    AND (e.date AT TIME ZONE 'UTC')::date < (now() AT TIME ZONE 'Europe/Moscow')::date + 7
+    ORDER BY e.date ASC
+  `;
+  if (!events.length) return ctx.reply('На эту неделю событий нет 🎉', { reply_markup: mainKeyboard });
+  const text = events.map(e => {
+    const d = new Date(e.date);
+    const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short', timeZone: 'UTC' });
+    const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+    return `📌 *${e.title}*\n` +
+      `📅 ${dateStr} в ${timeStr}\n` +
+      (e.type_name ? `📂 ${e.type_name}\n` : '') +
+      (e.description ? `📝 ${e.description}` : '');
+  }).join('\n\n');
+  await ctx.reply(`*События на неделю:*\n\n${text}`, { parse_mode: 'Markdown', reply_markup: mainKeyboard });
+}
+
+bot.command('start', async (ctx) => {
+  const username = ctx.from?.username;
+  if (!username) {
+    return ctx.reply('У тебя не установлен username в Telegram. Установи его в настройках и попробуй снова.');
+  }
+  const [employee] = await sql`
+    SELECT * FROM employees WHERE LOWER(username) = LOWER(${username})
+  `;
+  if (!employee) {
+    return ctx.reply('Тебя нет в списке команды. Обратись к руководителю.');
+  }
+  await sql`
+    UPDATE employees SET telegram_id = ${ctx.from!.id} WHERE id = ${employee.id}
+  `;
+  await ctx.reply(
+    `Привет, ${employee.name}! 👋\n\nТы подключён к календарю команды.\n\n` +
+    `Команды:\n/today — события на сегодня\n/week — события на эту неделю`,
+    { reply_markup: mainKeyboard }
+  );
+});
+
+bot.command('today', sendToday);
+bot.command('week', sendWeek);
+
+// answerCallbackQuery убирает "часики" на кнопке
+bot.callbackQuery('today', async (ctx) => { await ctx.answerCallbackQuery(); await sendToday(ctx); });
+bot.callbackQuery('week', async (ctx) => { await ctx.answerCallbackQuery(); await sendWeek(ctx); });
+
+bot.catch((err) => console.error('Bot error:', err.error));
+
+export const POST = webhookCallback(bot, 'std/http', {
+  secretToken: process.env.WEBHOOK_SECRET,
+  timeoutMilliseconds: 25_000,
+});
