@@ -193,7 +193,9 @@ export default function AdminPage() {
   const typeOptions = eventTypes.map(t => ({ value: t.id, label: t.name, color: t.color }));
   const selectedType = typeOptions.find(o => o.value === Number(newEvent.type_id)) || null;
   const allSelected = employees.length > 0 && newEvent.participant_ids.length === employees.length;
-  const filteredEvents = eventFilter === 'all' ? events : events.filter(e => e.type_id === eventFilter);
+  const filteredEvents = (eventFilter === 'all' ? events : events.filter(e => e.type_id === eventFilter))
+  .slice()
+  .sort((a, b) => b.id - a.id);
 
   if (!authed) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
