@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { getAdmin } from '@/lib/auth';
 
 export async function GET() {
   const events = await sql`
-    SELECT e.id, e.title, e.type_id, e.description,
+    SELECT e.id, e.title, e.type_id, e.description, e.created_by,
       to_char(e.date AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS') as date,
       et.name as type_name,
       et.color as type_color,
@@ -19,16 +20,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get('x-admin-password');
-  if (auth !== process.env.ADMIN_PASSWORD) {
+  const admin = getAdmin(req);
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { title, type_id, date, description, participant_ids } = await req.json();
 
   const [event] = await sql`
-    INSERT INTO events (title, type_id, date, description)
-    VALUES (${title}, ${type_id}, ${date}, ${description})
+    INSERT INTO events (title, type_id, date, description, created_by)
+    VALUES (${title}, ${type_id}, ${date}, ${description}, ${admin})
     RETURNING *
   `;
 
@@ -43,8 +44,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const auth = req.headers.get('x-admin-password');
-  if (auth !== process.env.ADMIN_PASSWORD) {
+  if (!getAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -70,8 +70,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = req.headers.get('x-admin-password');
-  if (auth !== process.env.ADMIN_PASSWORD) {
+  if (!getAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

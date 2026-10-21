@@ -5,7 +5,7 @@ import DateTimePicker from '@/components/DateTimePicker';
 
 type Employee = { id: number; name: string; username: string };
 type EventType = { id: number; name: string; color: string };
-type Event = { id: number; title: string; type_id: number; type_name: string; type_color: string; date: string; description: string; participants: Employee[] };
+type Event = { id: number; title: string; type_id: number; type_name: string; type_color: string; date: string; description: string; created_by: string | null; participants: Employee[] };
 
 const GearIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,6 +38,7 @@ const PencilIcon = ({ size = 18 }: { size?: number }) => (
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
+  const [adminName, setAdminName] = useState('');
   const [authed, setAuthed] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
@@ -55,9 +56,16 @@ export default function AdminPage() {
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_password') : null;
     if (saved) {
-      fetch('/api/employees', { headers: { 'x-admin-password': saved } }).then(r => {
-        if (r.ok) { setPassword(saved); setAuthed(true); loadWith(saved); }
-        else localStorage.removeItem('admin_password');
+      fetch('/api/admin/login', { headers: { 'x-admin-password': saved } }).then(async r => {
+        if (r.ok) {
+          const data = await r.json();
+          setPassword(saved);
+          setAdminName(data.name);
+          setAuthed(true);
+          loadWith(saved);
+        } else {
+          localStorage.removeItem('admin_password');
+        }
       });
     }
   }, []);
@@ -81,8 +89,10 @@ export default function AdminPage() {
   function load() { return loadWith(password); }
 
   async function checkAuth() {
-    const r = await fetch('/api/employees', { headers: { 'x-admin-password': password } });
+    const r = await fetch('/api/admin/login', { headers: { 'x-admin-password': password } });
     if (r.ok) {
+      const data = await r.json();
+      setAdminName(data.name);
       setAuthed(true);
       localStorage.setItem('admin_password', password);
       load();
@@ -202,7 +212,12 @@ export default function AdminPage() {
     <div style={s.page}>
       <div style={{ maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '0.5rem' }}>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Управление</h1>
+          <div>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Управление</h1>
+            {adminName && (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: '0.15rem 0 0' }}>Вы вошли как {adminName}</p>
+            )}
+          </div>
           <a href="/" style={{
             background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.875rem',
             textDecoration: 'none', padding: '0.4rem 1rem', borderRadius: '999px',
@@ -367,6 +382,9 @@ export default function AdminPage() {
                             {event.participants.filter(p => p?.id).map(p => p.name).join(', ')}
                           </p>
                         </>
+                      )}
+                      {event.created_by && (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', margin: '0.35rem 0 0' }}>Создал: {event.created_by}</p>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '0.1rem', marginLeft: '0.5rem', flexShrink: 0 }}>

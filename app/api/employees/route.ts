@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
+import { getAdmin } from '@/lib/auth';
 
 export async function GET() {
   const employees = await sql`SELECT * FROM employees ORDER BY name ASC`;
@@ -7,8 +8,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get('x-admin-password');
-  if (auth !== process.env.ADMIN_PASSWORD) {
+  if (!getAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -24,8 +24,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = req.headers.get('x-admin-password');
-  if (auth !== process.env.ADMIN_PASSWORD) {
+  if (!getAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
