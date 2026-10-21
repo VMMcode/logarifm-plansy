@@ -116,8 +116,8 @@ export async function GET(req: NextRequest) {
       JOIN event_participants ep ON e.id = ep.event_id
       JOIN employees emp ON ep.employee_id = emp.id
       LEFT JOIN event_types et ON e.type_id = et.id
-      WHERE e.date <= now() + interval '1 hour'
-      AND e.date > now()
+      WHERE e.date <= ((now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'UTC') + interval '1 hour'
+      AND e.date > ((now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'UTC')
       AND e.reminder_1h_sent = false
       AND emp.telegram_id IS NOT NULL
     `;
